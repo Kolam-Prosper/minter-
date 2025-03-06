@@ -1,101 +1,163 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { useState, useEffect } from "react"
+import { useWeb3 } from "@/hooks/use-web3"
+import { getTokensOfOwner } from "@/lib/contract"
+import { TokenDetails } from "@/components/token-details"
+import { NetworkWarning } from "@/components/network-warning"
+import { MintTokens } from "@/components/mint-tokens"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { TokenCard } from "@/components/token-card"
+
+export default function Page() {
+  const { provider, account, isConnected, isCorrectNetwork, connect } = useWeb3()
+  const [tokens, setTokens] = useState<number[]>([])
+  const [selectedTokenId, setSelectedTokenId] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  // Add debug logging
+  useEffect(() => {
+    console.log("Connection status:", { isConnected, isCorrectNetwork, account })
+  }, [isConnected, isCorrectNetwork, account])
+
+  useEffect(() => {
+    async function fetchTokens() {
+      if (provider && account && isCorrectNetwork) {
+        try {
+          setLoading(true)
+          console.log("Fetching tokens for account:", account)
+
+          // Add more detailed logging
+          console.log("Provider type:", provider.constructor.name)
+          console.log("Account:", account)
+          console.log("Network status:", isCorrectNetwork)
+
+          const tokenIds = await getTokensOfOwner(provider, account)
+          console.log("Tokens fetched:", tokenIds)
+
+          if (Array.isArray(tokenIds)) {
+            setTokens(tokenIds)
+          } else {
+            console.error("Unexpected response format:", tokenIds)
+            setTokens([])
+          }
+        } catch (error) {
+          console.error("Error fetching tokens:", error)
+          if (error instanceof Error) {
+            console.error("Error message:", error.message)
+            console.error("Error stack:", error.stack)
+          }
+        } finally {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchTokens()
+  }, [provider, account, isCorrectNetwork])
+
+  const handleTokenSelect = (tokenId: number) => {
+    setSelectedTokenId(tokenId)
+  }
+
+  const refreshTokens = async () => {
+    if (provider && account && isCorrectNetwork) {
+      try {
+        setLoading(true)
+        const tokenIds = await getTokensOfOwner(provider, account)
+        setTokens(tokenIds)
+      } catch (error) {
+        console.error("Error refreshing tokens:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">UAE T-Bond Platform</h1>
+          <p className="mt-2 text-sm text-gray-600">Manage your UAE Treasury Bonds on Unichain</p>
+        </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        {!isConnected ? (
+          <div className="max-w-md mx-auto mb-8">
+            <Card className="shadow-lg border-0">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl">Welcome to UAE T-Bond Platform</CardTitle>
+                <CardDescription>Connect your wallet to get started</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={connect} className="w-full" size="lg">
+                  Connect Wallet
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : !isCorrectNetwork ? (
+          <div className="max-w-3xl mx-auto">
+            <NetworkWarning />
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <div className="max-w-3xl mx-auto">
+              <MintTokens onSuccess={refreshTokens} />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <Card className="shadow-sm border-0 h-full">
+                  <CardHeader className="pb-4 border-b">
+                    <CardTitle className="text-xl">My Tokens</CardTitle>
+                    <CardDescription>Select a token to view details</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    {loading ? (
+                      <div className="flex justify-center items-center h-48">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                      </div>
+                    ) : tokens.length > 0 ? (
+                      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                        {tokens.map((tokenId) => (
+                          <TokenCard
+                            key={tokenId}
+                            tokenId={tokenId}
+                            isSelected={selectedTokenId === tokenId}
+                            onClick={() => handleTokenSelect(tokenId)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 px-4">
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No tokens found</h3>
+                        <p className="text-gray-500 mb-6">Mint some tokens to get started!</p>
+                        <Button variant="outline" onClick={refreshTokens} size="sm">
+                          Refresh
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div>
+                <Card className="shadow-sm border-0 h-full">
+                  <CardHeader className="pb-4 border-b">
+                    <CardTitle className="text-xl">Token Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <TokenDetails tokenId={selectedTokenId} />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  );
+  )
 }
+
